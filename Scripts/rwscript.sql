@@ -108,74 +108,55 @@ ORDER BY total_salary DESC;
 -- "David"	"Price"	"Vanderbilt University"	81851296
 
 -- 4. Using the fielding table, group players into three groups based on their position: label players with position OF as "Outfield", those with position "SS", "1B", "2B", and "3B" as "Infield", and those with position "P" or "C" as "Battery". Determine the number of putouts made by each of these three groups in 2016.
-
-
-(SELECT COUNT(playerid) AS players_per_position,
+    
+    SELECT SUM(po) AS putouts,
     CASE WHEN pos = 'OF' THEN 'Outfield'
     WHEN pos = 'SS' THEN 'Infield'
-    WHEN pos = '1B' THEN 'Outfield'
-    WHEN pos = '2B' THEN 'Outfield'
-    WHEN pos = '3B' THEN 'Outfield'
+    WHEN pos = '1B' THEN 'Infield'
+    WHEN pos = '2B' THEN 'Infield'
+    WHEN pos = '3B' THEN 'Infield'
     WHEN pos = 'P' THEN 'Battery'
-    WHEN pos = 'C' THEN 'Battery'
-    ELSE 'NULL' END AS position
+    WHEN pos = 'C' THEN 'Battery' END AS position
 FROM fielding
-    GROUP BY position)
-   
-SELECT PO
-FROM fielding
-WHERE fielding.yearid = 2016;
-
-SELECT COUNT(playerid) AS players_per_position,
-    CASE WHEN pos = 'OF' THEN 'Outfield'
-    WHEN pos = 'SS' THEN 'Infield'
-    WHEN pos = '1B' THEN 'Outfield'
-    WHEN pos = '2B' THEN 'Outfield'
-    WHEN pos = '3B' THEN 'Outfield'
-    WHEN pos = 'P' THEN 'Battery'
-    WHEN pos = 'C' THEN 'Battery'
-    ELSE 'NULL' END AS position
-FROM fielding
+WHERE yearid = 2016
     GROUP BY position
     
-    SELECT COUNT(playerid) AS players_per_position, po,
-    CASE WHEN pos = 'OF' THEN 'Outfield'
-    WHEN pos = 'SS' THEN 'Infield'
-    WHEN pos = '1B' THEN 'Outfield'
-    WHEN pos = '2B' THEN 'Outfield'
-    WHEN pos = '3B' THEN 'Outfield'
-    WHEN pos = 'P' THEN 'Battery'
-    WHEN pos = 'C' THEN 'Battery'
-    ELSE 'NULL' END AS position
-FROM fielding
-    GROUP BY position, po
-  
+-- Can also do it this way: when pos IN ('OF') THEN 'outfield'
     
-    
-    
+-- 41424	"Battery"
+-- 58934	"Infield"
+-- 29560	"Outfield"
    
 -- 5. Find the average number of strikeouts per game by decade since 1920. Round the numbers you report to 2 decimal places. Do the same for home runs per game. Do you see any trends?
 
--- JOIN
--- ROUND
--- Need tables that has strikeouts , year, game, decade, and home runs (hr)
 
--- Strikeouts (SO) is in pitching table
---homeruns (hr) is in batting table
-
-SELECT COUNT(b.hr), COUNT(p.so), b.yearid
+SELECT COUNT(b.hr) AS homeruns, AVG(p.so) AS strikeouts, ((p.yearid/10)*10) AS decade, b.g
 FROM batting AS b
 INNER JOIN pitching AS p
 USING (playerid)
-GROUP BY p.so, b.yearid;
+WHERE ((p.yearid/10)*10) > 1920
+GROUP BY b.g, decade;
 
-SELECT so
-FROM pitching;
+SELECT ROUND(AVG(p.so),2) AS strikeouts, ((p.yearid/10)*10) AS decade, p.g
+FROM batting AS b
+INNER JOIN pitching AS p
+USING (playerid)
+WHERE ((p.yearid/10)*10) > 1920
+GROUP BY p.g, decade;
 
-SELECT AVG(strikeouts), game, decade
-FROM 
-GROUP BY game, decade
-WHERE year > 1920
+SELECT ROUND(AVG(so),2) AS strikeouts, ((yearid/10)*10) AS decade, g
+FROM pitching
+WHERE ((yearid/10)*10) > 1920
+GROUP BY g, decade;
 
-Does since 1920 include 1920? Or should it start with 1921?
+SELECT ROUND(AVG(so),2) AS strikeouts, ((yearid/10)*10) AS decade, g, teamid, yearid
+FROM teams
+WHERE ((yearid/10)*10) > 1920
+GROUP BY g, decade, teamid, yearid
+ORDER BY yearid;
 
+SELECT *
+FROM teams;
+
+SELECT *
+FROM batting;
