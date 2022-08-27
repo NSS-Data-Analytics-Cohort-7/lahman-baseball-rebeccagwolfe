@@ -36,7 +36,7 @@ ORDER BY height
 
 -- Returns the team id of SLA, but the name is null 
 
-SELECT p.namefirst, p.namelast, CAST(height AS NUMERIC), a.g_all, t.teamid, t.name
+SELECT CONCAT(p.namefirst,' ', p.namelast) AS name, CAST(height AS NUMERIC), a.g_all, t.teamid, t.name
 FROM people AS p
 INNER JOIN appearances AS a
 USING (playerid)
@@ -159,7 +159,7 @@ SELECT *
 FROM teams
 WHERE teamid = 'TBA'
 
-
+------------------------------------------------------------------
 SELECT p.namefirst, p.namelast, s.schoolname, CAST(SUM(DISTINCT(CAST(salary AS NUMERIC)))AS MONEY) AS total_salary
 FROM people AS p
 INNER JOIN salaries as sa
@@ -171,7 +171,7 @@ USING (schoolid)
 WHERE s.schoolname = 'Vanderbilt University'
 GROUP BY p.namefirst, p.namelast, s.schoolname
 ORDER BY total_salary DESC;
-
+------------------------------------------------------------------
 -- "David"	"Price"	"Vanderbilt University"	81851296
 
 
@@ -245,7 +245,7 @@ total games from teams -
 SELECT *
 FROM teams
 
--- WIth Rob's help, discovered there are two teams that play each game. If I'm using the teams table, the number of strikeouts per game should be double if we're considering both teams. 
+-- WIth Rob's help, discovered there are two teams that play each game. If I'm using the teams table, the number of strikeouts per game should be doubled if we're considering both teams. 
 
 SELECT SUM(g), teamid
 FROM teams
@@ -278,16 +278,6 @@ GROUP BY decade
 ORDER BY decade
 --Homeruns. Multiplied by 2. The average increases each year. 
 ------------------------------------------------------------------------------------------------------------------
-SELECT CAST((so/g)AS NUMERIC) AS strikeouts_per_game, teamid, yearid
-FROM teams
-ORDER BY teamid, yearid;
-
-ANA had 953 strikeouts in 1884 and played 162 games. 
-
-g from teams = number of games played. If grouping by year, should be about 162 per year.
-
-SELECT *
-FROM batting;
 
 -- use teams table instead of batting or pitching. You don't need to join anything. Each team plays about 154 games/year. 
 
@@ -311,12 +301,44 @@ ORDER BY percentage DESC
 ------------------------------------------------------------------------------------------------------------------
 
 
-SELECT (CAST(SUM(sb)AS NUMERIC))/(CAST(SUM(sb) AS NUMERIC) + CAST(SUM(cs) AS NUMERIC)), playerid
-FROM batting
-WHERE yearid = 2016 And sb <> 0
-GROUP BY playerid
+-- 7.  From 1970 â€“ 2016, what is the largest number of wins for a team that did not win the world series? What is the smallest number of wins for a team that did win the world series? Doing this will probably result in an unusually small number of wins for a world series champion â€“ determine why this is the case. Then redo your query, excluding the problem year. How often from 1970 â€“ 2016 was it the case that a team with the most wins also won the world series? What percentage of the time?
 
+SELECT *
+FROM teams;
 
+SELECT W, WSWin, teamid, yearid
+FROM teams
+WHERE wswin = 'N' OR wswin IS NULL AND yearid BETWEEN 1970 AND 2016
+ORDER BY w DESC;
+-- 116 wins from CHN in 1906 and SEA in 2001
 
+SELECT MAX(W)
+FROM teams
+WHERE wswin = 'N' AND yearid BETWEEN 1970 AND 2016
+
+SELECT MAX(W)
+FROM teams
+WHERE wswin = 'N' OR wswin IS NULL AND yearid BETWEEN 1970 AND 2016
+--Both return 116 wins
+
+SELECT MIN(W)
+FROM teams
+WHERE wswin = 'Y' AND yearid BETWEEN 1970 AND 2016
+--Returns 63 wins
+
+SELECT w, teamid, yearid
+FROM teams
+WHERE wswin = 'Y' AND yearid BETWEEN 1970 AND 2016 AND yearid <> 1981
+ORDER BY w
+--83 wins from SLN in 2006 (eliminating year 1981)
+
+-- How often from 1970 â€“ 2016 was it the case that a team with the most wins also won the world series? What percentage of the time?
+
+measure max wins per year and world series that year? 
+
+SELECT SUM(w), wswin, yearid, teamid
+FROM teams
+WHERE yearid BETWEEN 1970 AND 2016
+GROUP BY 
 
 
