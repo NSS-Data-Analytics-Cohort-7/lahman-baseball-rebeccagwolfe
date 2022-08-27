@@ -78,7 +78,8 @@ WHERE s.schoolname = 'Vanderbilt University' AND namefirst = 'David'
 GROUP BY p.namefirst, p.namelast, s.schoolname
 ORDER BY total_salary DESC;
 
--- David Price at $245,553,888
+-- David Price at $245,553,88
+
 
 SELECT p.namefirst, p.namelast, s.schoolname, CAST(CAST(salary AS NUMERIC)AS MONEY) AS total_salary
 FROM people AS p
@@ -89,9 +90,79 @@ USING (playerid)
 INNER JOIN schools AS s
 USING (schoolid)
 WHERE s.schoolname = 'Vanderbilt University' AND namefirst = 'David'
-ORDER BY total_salary DESC;
+ORDER BY sa.salary DESC;
 
 --Shows all the salaries that David earned. I noticed that each salary is listed three times...so then added distinc.
+
+SELECT p.namefirst, p.namelast, s.schoolname, CAST(CAST(salary AS NUMERIC)AS MONEY) AS total_salary, c.yearid
+FROM people AS p
+INNER JOIN salaries as sa
+USING (playerid)
+INNER JOIN collegeplaying AS c
+USING (playerid)
+INNER JOIN schools AS s
+USING (schoolid)
+WHERE s.schoolname = 'Vanderbilt University' AND namefirst = 'David'
+ORDER BY c.yearid DESC;
+
+-- This shows multiple salaries for each year. 
+
+SELECT p.namefirst, p.namelast, s.schoolname, CAST(CAST(salary AS NUMERIC)AS MONEY) AS total_salary, c.yearid
+FROM people AS p
+INNER JOIN salaries as sa
+USING (playerid)
+LEFT JOIN collegeplaying AS c
+USING (playerid)
+LEFT JOIN schools AS s
+USING (schoolid)
+WHERE s.schoolname = 'Vanderbilt University' AND namefirst = 'David'
+ORDER BY c.yearid DESC;
+
+-- Tried doing left joins intead - still gave 21 different salaries from 2005 to 2007.
+
+SELECT p.namefirst, p.namelast, s.schoolname, CAST(CAST(salary AS NUMERIC)AS MONEY) AS total_salary, sa.yearid
+FROM people AS p
+INNER JOIN salaries as sa
+USING (playerid)
+LEFT JOIN collegeplaying AS c
+USING (playerid)
+LEFT JOIN schools AS s
+USING (schoolid)
+WHERE s.schoolname = 'Vanderbilt University' AND namefirst = 'David'
+ORDER BY sa.yearid DESC;
+
+
+-- Used year from salaries table. Same numbers, but years from 2010 to 2016.
+
+SELECT *
+FROM schools
+
+SELECT *
+FROM salaries
+
+SELECT *
+FROM salaries
+INNER JOIN people
+USING (playerid)
+WHERE namefirst = 'David' AND namelast = 'Price'
+
+SELECT *
+FROM teams
+
+SELECT CAST(CAST(SUM(salary) AS NUMERIC) AS MONEY), playerid
+FROM salaries
+INNER JOIN people
+USING (playerid)
+WHERE playerid = 'priceda01'
+GROUP BY playerid
+ORDER BY SUM(salary) DESC
+
+-- $81,851,296.00 priceda01
+
+SELECT *
+FROM teams
+WHERE teamid = 'TBA'
+
 
 SELECT p.namefirst, p.namelast, s.schoolname, CAST(SUM(DISTINCT(CAST(salary AS NUMERIC)))AS MONEY) AS total_salary
 FROM people AS p
@@ -106,6 +177,8 @@ GROUP BY p.namefirst, p.namelast, s.schoolname
 ORDER BY total_salary DESC;
 
 -- "David"	"Price"	"Vanderbilt University"	81851296
+
+
 
 -- 4. Using the fielding table, group players into three groups based on their position: label players with position OF as "Outfield", those with position "SS", "1B", "2B", and "3B" as "Infield", and those with position "P" or "C" as "Battery". Determine the number of putouts made by each of these three groups in 2016.
     
@@ -155,8 +228,53 @@ WHERE ((yearid/10)*10) > 1920
 GROUP BY g, decade, teamid, yearid
 ORDER BY yearid;
 
-SELECT *
-FROM teams;
+
+SELECT ROUND(AVG(so),2) AS average_strikeouts, g, ((yearid/10)*10) AS decade
+FROM teams
+GROUP BY g, decade
+ORDER BY decade DESC;
+
+
+SELECT (CAST(so AS NUMERIC)/CAST(g AS NUMERIC)) AS sog, teamid
+FROM teams
+ORDER BY teamid
+
+SELECT (CAST(so AS NUMERIC)/CAST(g AS NUMERIC)) AS sog, teamid, yearid
+FROM teams
+ORDER BY teamid, yearid
+
+SELECT ROUND(AVG((CAST(so AS NUMERIC)/CAST(g AS NUMERIC))),2) AS strikeouts_per_game, ((yearid/10)*10) AS decade
+FROM teams
+WHERE yearid > 1920
+GROUP BY decade
+ORDER BY decade
+
+-- Final query (hopefully) for strikouts
+
+SELECT ROUND(AVG((CAST(hr AS NUMERIC)/CAST(g AS NUMERIC))),2) AS strikeouts_per_game, ((yearid/10)*10) AS decade
+FROM teams
+WHERE yearid > 1920
+GROUP BY decade
+ORDER BY decade
+--Homeruns. The average increases each year. 
+
+SELECT CAST((so/g)AS NUMERIC) AS strikeouts_per_game, teamid, yearid
+FROM teams
+ORDER BY teamid, yearid;
+
+ANA had 953 strikeouts in 1884 and played 162 games. 
+
+g from teams = number of games played. If grouping by year, should be about 162 per year.
 
 SELECT *
 FROM batting;
+
+-- use teams table instead of batting or pitching. You don't need to join anything. Each team plays about 154 games/year. 
+
+-- 6. Find the player who had the most success stealing bases in 2016, where __success__ is measured as the percentage of stolen base attempts which are successful. (A stolen base attempt results either in a stolen base or being caught stealing.) Consider only players who attempted _at least_ 20 stolen bases.
+
+player
+stolen base attempts
+stolen base successes
+stolen base failures
+
