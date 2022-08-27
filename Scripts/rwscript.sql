@@ -1,12 +1,8 @@
 -- 1. What range of years for baseball games played does the provided database cover? 
-1871 through 2016
 
-SELECT debut
+SELECT MIN(debut), MAX(finalgame)
 FROM people;
-
-
-FROM teams;
-
+-- "1871-05-04"	"2017-04-03". 1871 through 2017
 
 -- 2. Find the name and height of the shortest player in the database. How many games did he play in? What is the name of the team for which he played?
 
@@ -243,21 +239,45 @@ SELECT (CAST(so AS NUMERIC)/CAST(g AS NUMERIC)) AS sog, teamid, yearid
 FROM teams
 ORDER BY teamid, yearid
 
+two teams per game
+total games from teams - 
+
+SELECT *
+FROM teams
+
+-- WIth Rob's help, discovered there are two teams that play each game. If I'm using the teams table, the number of strikeouts per game should be double if we're considering both teams. 
+
+SELECT SUM(g), teamid
+FROM teams
+GROUP BY teamid
+
+SELECT ROUND(AVG((CAST(so AS NUMERIC)/CAST(g AS NUMERIC))),2)*2 AS strikeouts_per_game, ((yearid/10)*10) AS decade
+FROM teams
+WHERE yearid > 1920
+GROUP BY decade
+ORDER BY decade
+
 SELECT ROUND(AVG((CAST(so AS NUMERIC)/CAST(g AS NUMERIC))),2) AS strikeouts_per_game, ((yearid/10)*10) AS decade
 FROM teams
 WHERE yearid > 1920
 GROUP BY decade
 ORDER BY decade
 
--- Final query (hopefully) for strikouts
-
-SELECT ROUND(AVG((CAST(hr AS NUMERIC)/CAST(g AS NUMERIC))),2) AS strikeouts_per_game, ((yearid/10)*10) AS decade
+----------------------------------------------------------------------------------------------------------------
+SELECT ROUND((AVG((CAST(so AS NUMERIC)/CAST(g AS NUMERIC)))*2),2) AS strikeouts_per_game, ((yearid/10)*10) AS decade
 FROM teams
 WHERE yearid > 1920
 GROUP BY decade
 ORDER BY decade
---Homeruns. The average increases each year. 
+-- Final query (hopefully) for strikouts
 
+SELECT ROUND(AVG((CAST(hr AS NUMERIC)/CAST(g AS NUMERIC))),2)*2 AS homeruns_per_game, ((yearid/10)*10) AS decade
+FROM teams
+WHERE yearid > 1920
+GROUP BY decade
+ORDER BY decade
+--Homeruns. Multiplied by 2. The average increases each year. 
+------------------------------------------------------------------------------------------------------------------
 SELECT CAST((so/g)AS NUMERIC) AS strikeouts_per_game, teamid, yearid
 FROM teams
 ORDER BY teamid, yearid;
@@ -273,8 +293,30 @@ FROM batting;
 
 -- 6. Find the player who had the most success stealing bases in 2016, where __success__ is measured as the percentage of stolen base attempts which are successful. (A stolen base attempt results either in a stolen base or being caught stealing.) Consider only players who attempted _at least_ 20 stolen bases.
 
-player
-stolen base attempts
-stolen base successes
-stolen base failures
+
+SELECT SUM(sb) AS stolen_bases, SUM(cs) AS caught_stealing, (SUM(sb) + SUM(cs)) AS total_attempts, (SUM(sb)/(SUM(sb) + SUM(cs))) AS percentage
+FROM batting
+WHERE yearid = 2016 
+ORDER BY stolen_bases DESC
+
+
+-----------------------------------------------------------------------------------------------------------------
+SELECT (sb+cs) AS attempts, ROUND(CAST(sb AS NUMERIC)/(CAST(sb AS NUMERIC)+CAST(cs AS NUMERIC)), 2) AS percentage, playerid, CONCAT(namefirst,' ', namelast)
+FROM batting
+INNER JOIN people
+USING (playerid)
+WHERE yearid = 2016 AND sb <> 0 AND (sb+cs) > 20
+GROUP BY playerid, sb, cs, attempts, namefirst, namelast
+ORDER BY percentage DESC
+------------------------------------------------------------------------------------------------------------------
+
+
+SELECT (CAST(SUM(sb)AS NUMERIC))/(CAST(SUM(sb) AS NUMERIC) + CAST(SUM(cs) AS NUMERIC)), playerid
+FROM batting
+WHERE yearid = 2016 And sb <> 0
+GROUP BY playerid
+
+
+
+
 
