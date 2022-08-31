@@ -303,23 +303,20 @@ ORDER BY percentage DESC
 
 -- 7.  From 1970 â€“ 2016, what is the largest number of wins for a team that did not win the world series? What is the smallest number of wins for a team that did win the world series? Doing this will probably result in an unusually small number of wins for a world series champion â€“ determine why this is the case. Then redo your query, excluding the problem year. How often from 1970 â€“ 2016 was it the case that a team with the most wins also won the world series? What percentage of the time?
 
-SELECT *
-FROM teams;
+SELECT W, WSWin, teamid, yearid
+FROM teams
+WHERE wswin = 'N' AND yearid BETWEEN 1970 AND 2016 
+ORDER BY w DESC;
+-- 116 wins from SEA in 2001. When I filter out the NULLS (OR wswin IS NULL), it treats my BETWEEN statement as OR. See below where it includes 1904. 
 
 SELECT W, WSWin, teamid, yearid
 FROM teams
-WHERE wswin = 'N' OR wswin IS NULL AND yearid BETWEEN 1970 AND 2016
+WHERE wswin = 'N' AND yearid BETWEEN 1970 AND 2016 OR wswin IS NULL
 ORDER BY w DESC;
--- 116 wins from CHN in 1906 and SEA in 2001
 
 SELECT MAX(W)
 FROM teams
 WHERE wswin = 'N' AND yearid BETWEEN 1970 AND 2016
-
-SELECT MAX(W)
-FROM teams
-WHERE wswin = 'N' OR wswin IS NULL AND yearid BETWEEN 1970 AND 2016
---Both return 116 wins
 
 SELECT MIN(W)
 FROM teams
@@ -334,6 +331,8 @@ ORDER BY w
 
 -- How often from 1970 â€“ 2016 was it the case that a team with the most wins also won the world series? What percentage of the time?
 
+divide by the number 47 teams
+
 measure max wins per year and world series that year? 
 
 SELECT SUM(w), wswin, yearid, teamid
@@ -341,4 +340,200 @@ FROM teams
 WHERE yearid BETWEEN 1970 AND 2016
 GROUP BY 
 
+SELECT WSWin, teamid, yearid
+FROM teams
+WHERE wswin = 'Y' AND yearid BETWEEN 1970 AND 2016
+ORDER BY yearid DESC;
+
+
+SELECT MAX(W), teamid, yearid, 
+FROM teams
+WHERE  yearid BETWEEN 1970 AND 2016
+GROUP BY yearid,teamid
+ORDER BY MAX(w) DESC, yearid;
+
+
+
+
+SELECT WSWin, teamid, yearid
+FROM teams
+WHERE wswin = 'Y' AND yearid BETWEEN 1970 AND 2016
+ORDER BY yearid DESC;
+
+SELECT subquery.wins
+FROM subquery
+WHERE teamid IN
+(SELECT MAX(W) AS wins, teamid, yearid, wswin
+FROM teams
+WHERE  yearid BETWEEN 1970 AND 2016
+GROUP BY yearid,teamid, wswin
+ORDER BY wins DESC, yearid) AS subquery
+WHERE subquery.wswin = 'Y'
+
+SELECT MAX(W) AS wins, teamid, yearid, wswin
+FROM teams
+WHERE  yearid BETWEEN 1970 AND 2016
+GROUP BY yearid,teamid, wswin
+ORDER BY wins DESC, yearid
+
+
+
+-- 46 teams won the world series between 1970 and 2016 
+-- 1 world series per day. Out of 46 world series winners, how many of those winners also had the most wins that year?
+
+SELECT w, teamid, yearid, wswin
+FROM teams
+WHERE  yearid BETWEEN 1970 AND 2016 AND wswin = 'Y'
+ORDER BY w DESC, yearid
+--Returns 46 rows
+
+SELECT MAX(w),yearid
+FROM teams
+WHERE yearid BETWEEN 1970 AND 2016
+GROUP BY yearid
+ORDER BY yearid
+--Returns the 47 max scores for each year. but when I add in the teams column, it returns 1294 rows.
+
+SELECT w, teamid, yearid
+FROM teams
+WHERE yearid BETWEEN 1970 AND 2016
+ORDER BY yearid
+
+
+-- CTES joining on two seperate keys OR case when statements to count
+
+WITH wins AS
+(SELECT MAX(w) AS max_wins, yearid
+FROM teams
+WHERE yearid BETWEEN 1970 AND 2016
+GROUP BY yearid)
+
+SELECT t.w, t.teamid, t.yearid, t.wswin
+FROM teams AS t
+INNER JOIN wins cte
+ON cte.yearid = t.yearid AND cte.max_wins = t.w
+WHERE t.wswin = 'Y'
+ORDER BY t.w DESC, t.yearid
+
+
+--      8. Using the attendance figures from the homegames table, find the teams and parks which had the top 5 average attendance per game in 2016 (where average attendance is defined as total attendance divided by number of games). Only consider parks where there were at least 10 games played. Report the park name, team name, and average attendance. Repeat for the lowest 5 average attendance.
+
+-- park name, team name, average attendance 
+-- average attendance = total attendance/number of games
+-- only at parks where 10+ games were played
+-- in 2016
+     
+     SELECT team, park, games, attendance
+     FROM homegames
+     WHERE year = 2016 AND games >= 10
+     
+     SELECT park
+     FROM homegames
+     WHERE year = 2016 AND WHERE park IN
+    
+SELECT park, SUM(attendance)/SUM(games) AS average_attendance
+FROM homegames
+WHERE park IN
+    (SELECT park
+     FROM homegames
+     WHERE year = 2016
+     GROUP BY park
+     HAVING SUM(games) >=10)
+GROUP BY park
+ORDER BY SUM(attendance)/SUM(games) DESC
+LIMIT 5;
+--    Shows the top 5 parks with highest attendance  
+-- "NYC21"	42622
+-- "STL10"	41871
+-- "SFO03"	39841
+-- "PHI13"	36889
+-- "DEN02"	35546
+     SELECT *
+     FROM parks
+     
+     SELECT p.park_name, SUM(attendance)/SUM(games) AS average_attendance
+FROM homegames AS h
+INNER JOIN parks AS p
+USING (park)
+WHERE park IN
+    (SELECT park
+     FROM homegames
+     WHERE year = 2016
+     GROUP BY park
+     HAVING SUM(games) >=10)
+GROUP BY p.park_name
+ORDER BY SUM(attendance)/SUM(games) DESC
+LIMIT 5;
+     
+-- "Yankee Stadium II"	42622
+-- "Busch Stadium III"	41871
+-- "AT&T Park"	        39841
+-- "Citizens Bank Park"	36889
+-- "Coors Field"	    35546
+     
+--      Try without a subquery
+--      group by and order by are the only two clauses that you can referece the aliases that you give in the select statement. 
+     
+     SELECT p.park_name, team, SUM(attendance)/SUM(games) AS average_attendance
+FROM homegames AS h
+INNER JOIN parks AS p
+USING (park)
+WHERE park IN
+    (SELECT park
+     FROM homegames
+     WHERE year = 2016
+     GROUP BY park
+     HAVING SUM(games) >=10)
+GROUP BY p.park_name, team
+ORDER BY SUM(attendance)/SUM(games) DESC
+LIMIT 6;     
+-- "Citizens Bank Park"	"TOR"	43357
+-- "Yankee Stadium II"	"NYA"	42622
+-- "AT&T Park"	        "CIN"	42310
+-- "Busch Stadium III"	"SLN"	41871
+-- "AT&T Park"	        "SFN"	39839
+     
+     
+  SELECT DISTINCT(p.park_name), team, SUM(attendance)/SUM(games) AS average_attendance
+FROM homegames AS h
+INNER JOIN parks AS p
+USING (park)
+WHERE park IN
+    (SELECT park
+     FROM homegames
+     WHERE year = 2016
+     GROUP BY park
+     HAVING SUM(games) >=10)
+GROUP BY p.park_name, team
+ORDER BY SUM(attendance)/SUM(games)
+LIMIT 6;       
+-- When I add in teams, it changes the list slightly..hmm. Does this mean there have been some switches of teams between parks?
+  
+     
+--      To join team names to table:
+SELECT teams.name, teams.teamid, teams.franchid, homegames.team
+     FROM teams
+     INNER JOIN homegames
+     ON teams.franchid = homegames.team
+     
+SELECT SUM(attendance)/SUM(games), park
+     FROM homegames
+     WHERE park = 'LOS03'
+     GROUP BY park
+     
+     SELECT SUM(attendance), park
+     FROM homegames
+     WHERE park = 'LOS03'
+--      GROUP BY park
+--      165512326 people attended this park 
+     
+     SELECT SUM(games), park
+     FROM homegames
+     WHERE park = 'LOS03'
+     GROUP BY park
+     
+--      4714 games
+    
+--     165,512,325 attendance/4,714 games = 35,110 people/game at LOS03 park
+  
 
