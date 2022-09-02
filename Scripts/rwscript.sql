@@ -433,10 +433,80 @@ USING (teamid, yearid)
 WHERE a.awardid = 'TSN Manager of the Year' AND a.lgid = 'AL'
 ORDER BY a.playerid
 -------------------------------------------------------------------------------------------------------------------
--- ? Why am I getting Jim Leyland listed three times?
+WITH nl AS 
+(SELECT a.playerid, a.lgid, a.awardid, a.yearid, m.teamid
+FROM awardsmanagers AS a
+INNER JOIN managers AS m
+WHERE a.awardid = 'TSN Manager of the Year' AND a.lgid = 'NL'
+ORDER BY a.playerid),
+
+al AS 
+(SELECT a.playerid, a.lgid, a.awardid, a.yearid, m.teamid
+FROM awardsmanagers AS a
+INNER JOIN managers AS m
+USING (playerid, yearid)
+WHERE a.awardid = 'TSN Manager of the Year' AND a.lgid = 'AL'
+ORDER BY a.playerid)
+
+SELECT CONCAT(p.namefirst,' ', p.namelast), al.playerid, al.lgid, al.awardid, al.yearid, nl.playerid, nl.lgid, nl.awardid, nl.yearid, al.teamid, nl.teamid
+FROM nl
+INNER JOIN al
+USING (playerid)
+LEFT JOIN people AS p
+USING (playerid)
+-----------------------------------------------------------------------------------------------
 
 
--- 10. Find all players who hit their career highest number of home runs in 2016. Consider only players who have played in the league for at least 10 years, and who hit at least one home run in 2016. Report the players' first and last names and the number of home runs they hit in 2016.
+WITH nl AS 
+(SELECT a.playerid, a.lgid, a.awardid, a.yearid, m.teamid
+FROM awardsmanagers AS a
+INNER JOIN managers AS m
+USING (playerid, yearid)
+WHERE a.awardid = 'TSN Manager of the Year' AND a.lgid = 'NL'
+ORDER BY a.playerid),
+
+al AS 
+(SELECT a.playerid, a.lgid, a.awardid, a.yearid, m.teamid
+FROM awardsmanagers AS a
+INNER JOIN managers AS m
+USING (playerid, yearid)
+WHERE a.awardid = 'TSN Manager of the Year' AND a.lgid = 'AL'
+ORDER BY a.playerid)
+
+SELECT CONCAT(p.namefirst,' ', p.namelast), al.playerid, al.lgid, al.awardid, al.yearid, nl.playerid, nl.lgid, nl.awardid, nl.yearid, al.teamid, nl.teamid
+FROM nl
+INNER JOIN al
+USING (playerid)
+LEFT JOIN people AS p
+USING (playerid)
+-----------------------------------------------------------------------------------------------------------------
+TRY WITH UNION
+
+WITH nl AS 
+(SELECT a.playerid, a.lgid, a.awardid, a.yearid, m.teamid
+FROM awardsmanagers AS a
+INNER JOIN managers AS m
+USING (playerid, yearid)
+WHERE a.awardid = 'TSN Manager of the Year' AND a.lgid = 'NL'
+ORDER BY a.playerid),
+
+al AS 
+(SELECT a.playerid, a.lgid, a.awardid, a.yearid, m.teamid
+FROM awardsmanagers AS a
+INNER JOIN managers AS m
+USING (playerid, yearid)
+WHERE a.awardid = 'TSN Manager of the Year' AND a.lgid = 'AL'
+ORDER BY a.playerid)
+
+SELECT nl.playerid, nl.lgid, nl.awardid, nl.yearid, nl.teamid
+FROM nl
+UNION
+SELECT al.playerid, al.lgid, al.awardid, al.yearid, al.teamid
+FROM al
+
+-- Didn't work with union for me. 
+
+-- -- 10. Find all players who hit their career highest number of home runs in 2016. Consider only players who have played in the league for at least 10 years, and who hit at least one home run in 2016. Report the players' first and last names and the number of home runs they hit in 2016.
 
 -- I'm looking for the players who hit more home runs in 2016 than any other year. 
 
@@ -451,12 +521,13 @@ WHERE hr > MAX(hr) and where year between 2006 AND 2015
 SELECT playerid, hr
 FROM batting 
 WHERE yearid = 2016 AND hr >
-
 (SELECT playerid, yearid, MAX(hr)
 FROM batting
 WHERE yearid BETWEEN 2006 AND 2016
-GROUP BY playerid, yearid)
+GROUP BY playerid, yearid);
 
+SELECT name, pop2000 FROM cities 
+WHERE pop2000 < (SELECT avg(pop2000)  FROM cities);
 
 SELECT playerid, hr
 FROM batting 
@@ -466,18 +537,18 @@ WHERE hr >
 FROM batting
 WHERE yearid BETWEEN 2006 AND 2016
 GROUP BY playerid
-ORDER BY MAX(hr) DESC)
+ORDER BY MAX(hr) DESC);
 -- returns 3649 
 
 SELECT playerid, MAX(hr)
 FROM batting
-WHERE yearid BETWEEN 2006 AND 2016
+WHERE yearid BETWEEN 2006 AND 2015
 GROUP BY playerid
 ORDER BY MAX(hr) DESC
 
 SELECT COUNT(DISTINCT(playerid))
 FROM batting
-WHERE yearid BETWEEN 2006 AND 2016
+WHERE yearid BETWEEN 2006 AND 2015
 
 "moralke01" hit 30 homeruns in 2016
 
@@ -490,6 +561,20 @@ SELECT MAX(hr), yearid
 FROM batting
 GROUP BY yearid
 
---3649 max homeruns
--- 3649 distinct players between 2006 and 2016
--- 18915 distinct players
+--3391 max homeruns from 2006 to 2015
+-- 3391 distinct players between 2006 and 2016
+
+SELECT playerid, 
+FROM batting 
+WHERE yearid = 2016 
+HAVING MAX(hr) IN
+
+CTE and a join
+
+(SELECT playerid, MAX(hr)
+FROM batting
+WHERE yearid BETWEEN 2006 AND 2015
+GROUP BY playerid
+ORDER BY MAX(hr) DESC);
+
+years must have played in the last 10 year. 
