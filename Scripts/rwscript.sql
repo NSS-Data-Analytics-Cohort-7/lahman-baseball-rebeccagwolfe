@@ -1,4 +1,6 @@
--- 1. What range of years for baseball games played does the provided database cover? 
+/*
+    1. What range of years for baseball games played does the provided database cover? 
+*/
 
 SELECT MIN(debut), MAX(finalgame)
 FROM people;
@@ -22,9 +24,6 @@ FROM people
 INNER JOIN fielding
 USING (playerid)
 ORDER BY height
-
--- Eddie Gaedel at 43 inches tall. He played in one game and 
-
   
 SELECT people.namefirst, people.namelast, CAST(people.height AS NUMERIC), batting.g, teams.name
 FROM people
@@ -33,8 +32,7 @@ USING (playerid)
 LEFT JOIN teams
 ON batting.teamid = teams.teamidbr
 ORDER BY height
-
--- Returns the team id of SLA, but the name is null 
+-- Eddie Gaedel at 43 inches tall. He played in one game and 
 
 SELECT CONCAT(p.namefirst,' ', p.namelast) AS name, CAST(height AS NUMERIC), a.g_all, t.teamid, t.name
 FROM people AS p
@@ -45,6 +43,19 @@ ON t.teamid = a.teamid
 ORDER BY height
 
 --Eddie Gaedel played 1 game for the St. Louis Browns
+
+SELECT CONCAT(p.namefirst,' ', p.namelast) AS name, CAST(height AS NUMERIC), a.g_all, t.teamid, t.name
+FROM people AS p
+INNER JOIN appearances AS a
+USING (playerid)
+LEFT JOIN teams AS t
+ON t.teamid = a.teamid
+ORDER BY height
+LIMIT 1;
+
+-- Try subquery: 
+-- SELECT MIN (height) 
+-- FROM people
    
 -- 3. Find all players in the database who played at Vanderbilt University. Create a list showing each playerâ€™s first and last names as well as the total salary they earned in the major leagues. Sort this list in descending order by the total salary earned. Which Vanderbilt player earned the most money in the majors?
 
@@ -173,8 +184,8 @@ GROUP BY p.namefirst, p.namelast, s.schoolname
 ORDER BY total_salary DESC;
 ------------------------------------------------------------------
 -- "David"	"Price"	"Vanderbilt University"	81851296
-
-
+--Can also use DISTINCT on year ID to give us only one salary per year
+--There is an extra row being added for every year of college.
 
 -- 4. Using the fielding table, group players into three groups based on their position: label players with position OF as "Outfield", those with position "SS", "1B", "2B", and "3B" as "Infield", and those with position "P" or "C" as "Battery". Determine the number of putouts made by each of these three groups in 2016.
     
@@ -348,6 +359,10 @@ FROM wins
 INNER JOIN ws
 ON ws.yearid = wins.yearid AND ws.w = wins.max_wins
 
+--Could do a subquery 
+
+SELECT COUNT(ws.*)
+FROM ws
 --Can be done using CTES joining on two seperate keys OR case when statements to count
 
 --      8. Using the attendance figures from the homegames table, find the teams and parks which had the top 5 average attendance per game in 2016 (where average attendance is defined as total attendance divided by number of games). Only consider parks where there were at least 10 games played. Report the park name, team name, and average attendance. Repeat for the lowest 5 average attendance.
@@ -364,6 +379,7 @@ GROUP BY p.park_name, t.name
 HAVING SUM(games) >=10
 ORDER BY SUM(h.attendance)/SUM(h.games) DESC
 LIMIT 5;
+
 -- Top 5: 
 -- "Dodger Stadium"	"Los Angeles Dodgers"	45719
 -- "Busch Stadium III"	"St. Louis Cardinals"	42524
@@ -382,14 +398,12 @@ GROUP BY p.park_name, t.name
 HAVING SUM(games) >=10
 ORDER BY SUM(h.attendance)/SUM(h.games)
 LIMIT 5;
-
-
--- Bottom 5: gives me Tropicana Field twice if I list the team name: 
+-- Bottom 5: gives me Tropicana Field twice if I list the team name. 
 
 -- "Tropicana Field"	                "Tampa Bay Devil Rays"	15878
 -- "Tropicana Field"	                      "Tampa Bay Rays"	15878
 -- "Oakland-Alameda County Coliseum"	    "Oakland Athletics"	18784
--- "Progressive Field"                 	"Cleveland Indians"	19650
+-- "Progressive Field"                   	"Cleveland Indians"	19650
 -- "Marlins Park"	                            "Miami Marlins"	21405
 
 SELECT p.park_name, team, SUM(attendance)/SUM(games) AS average_attendance
@@ -400,6 +414,20 @@ WHERE year = 2016
 GROUP BY p.park_name, team
 HAVING SUM(games) >=10
 ORDER BY SUM(attendance)/SUM(games)
+LIMIT 5;
+
+-- Joining on yearid as well will solve this. 
+
+SELECT p.park_name, t.name, SUM(h.attendance)/SUM(h.games) AS average_attendance
+FROM homegames AS h
+INNER JOIN parks AS p
+USING(park)
+LEFT JOIN teams AS t
+ON h.team = t.teamid AND p.park_name = t.park AND h.year = t.yearid
+WHERE year = 2016
+GROUP BY p.park_name, t.name
+HAVING SUM(games) >=10
+ORDER BY SUM(h.attendance)/SUM(h.games)
 LIMIT 5;
 
 -------------------------------------------------------------------------------------------------------------------
@@ -470,7 +498,7 @@ SELECT CONCAT(p.namefirst,' ', p.namelast), al.playerid, al.lgid, al.awardid, al
 FROM nl
 INNER JOIN al
 USING (playerid)
-LEFT JOIN people AS p
+INNER JOIN people AS p
 USING (playerid)
 -----------------------------------------------------------------------------------------------------------------
 TRY WITH UNION
@@ -567,4 +595,7 @@ WHERE CAST(debut AS date) <= '2006-12-31'
 ORDER BY maxhomerun
 LIMIT 7;
 -- Query that shows only homeruns, name, and whether they got their career high in 2016 or not.
-----------------------------------------------------------------------------------------------------------------------
+
+---------------------------------------------------------------------------------------------------------------------|| shorthand for CONCAT
+
+-- p.namelast || ',' || p.namefirst AS name
