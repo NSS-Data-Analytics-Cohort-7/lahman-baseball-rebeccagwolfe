@@ -343,7 +343,7 @@ FROM teams
 WHERE  yearid BETWEEN 1970 AND 2016 AND wswin = 'Y'
 ORDER BY w DESC, yearid)
 
-SELECT CAST(COUNT(ws.*) AS NUMERIC)/CAST(2016-1970 AS NUMERIC)*100 AS percentage
+SELECT ROUND(CAST(COUNT(ws.*) AS NUMERIC)/CAST(2016-1970 AS NUMERIC)*100,0) AS percentage
 FROM wins
 INNER JOIN ws
 ON ws.yearid = wins.yearid AND ws.w = wins.max_wins
@@ -353,16 +353,6 @@ ON ws.yearid = wins.yearid AND ws.w = wins.max_wins
 --      8. Using the attendance figures from the homegames table, find the teams and parks which had the top 5 average attendance per game in 2016 (where average attendance is defined as total attendance divided by number of games). Only consider parks where there were at least 10 games played. Report the park name, team name, and average attendance. Repeat for the lowest 5 average attendance.
      
 --------------------------------------------------------------------------------------------------------------------
-SELECT p.park_name,  SUM(h.attendance)/SUM(h.games) AS average_attendance
-FROM homegames AS h
-INNER JOIN parks AS p
-USING(park)
-WHERE year = 2016
-GROUP BY p.park_name
-HAVING SUM(games) >=10
-ORDER BY SUM(h.attendance)/SUM(h.games) DESC
-LIMIT 5;
-
 SELECT p.park_name, t.name, SUM(h.attendance)/SUM(h.games) AS average_attendance
 FROM homegames AS h
 INNER JOIN parks AS p
@@ -374,12 +364,12 @@ GROUP BY p.park_name, t.name
 HAVING SUM(games) >=10
 ORDER BY SUM(h.attendance)/SUM(h.games) DESC
 LIMIT 5;
-
-"Dodger Stadium"	"Los Angeles Dodgers"	45719
-"Busch Stadium III"	"St. Louis Cardinals"	42524
-"Rogers Centre"	    "Toronto Blue Jays"	    41877
-"AT&T Park" 	    "San Francisco Giants"	41546
-"Wrigley Field"	    "Chicago Cubs"	        39906
+-- Top 5: 
+-- "Dodger Stadium"	"Los Angeles Dodgers"	45719
+-- "Busch Stadium III"	"St. Louis Cardinals"	42524
+-- "Rogers Centre"	    "Toronto Blue Jays"	    41877
+-- "AT&T Park" 	    "San Francisco Giants"	41546
+-- "Wrigley Field"	    "Chicago Cubs"	        39906
 
 SELECT p.park_name, t.name, SUM(h.attendance)/SUM(h.games) AS average_attendance
 FROM homegames AS h
@@ -393,11 +383,14 @@ HAVING SUM(games) >=10
 ORDER BY SUM(h.attendance)/SUM(h.games)
 LIMIT 5;
 
-tampa
-okaland
-cleveland
-miami 
-chicago
+
+-- Bottom 5: gives me Tropicana Field twice if I list the team name: 
+
+-- "Tropicana Field"	                "Tampa Bay Devil Rays"	15878
+-- "Tropicana Field"	                      "Tampa Bay Rays"	15878
+-- "Oakland-Alameda County Coliseum"	    "Oakland Athletics"	18784
+-- "Progressive Field"                 	"Cleveland Indians"	19650
+-- "Marlins Park"	                            "Miami Marlins"	21405
 
 SELECT p.park_name, team, SUM(attendance)/SUM(games) AS average_attendance
 FROM homegames 
@@ -508,73 +501,70 @@ FROM al
 
 -- -- 10. Find all players who hit their career highest number of home runs in 2016. Consider only players who have played in the league for at least 10 years, and who hit at least one home run in 2016. Report the players' first and last names and the number of home runs they hit in 2016.
 
--- I'm looking for the players who hit more home runs in 2016 than any other year. 
+SELECT CONCAT(namefirst,' ', namelast), CAST(debut AS date)
+FROM people
+WHERE CAST(debut AS date) <= '2006-12-31'
+-- players who've played for at least 10 years: 16633 players 
 
-SELECT playerid, yearid, hr
-FROM batting
-ORDER BY yearid DESC
-
-yearid >= 2006
-
-WHERE hr > MAX(hr) and where year between 2006 AND 2015
-
-SELECT playerid, hr
-FROM batting 
-WHERE yearid = 2016 AND hr >
-(SELECT playerid, yearid, MAX(hr)
-FROM batting
-WHERE yearid BETWEEN 2006 AND 2016
-GROUP BY playerid, yearid);
-
-SELECT name, pop2000 FROM cities 
-WHERE pop2000 < (SELECT avg(pop2000)  FROM cities);
-
-SELECT playerid, hr
-FROM batting 
-WHERE hr >
-
-(SELECT playerid, MAX(hr)
-FROM batting
-WHERE yearid BETWEEN 2006 AND 2016
-GROUP BY playerid
-ORDER BY MAX(hr) DESC);
--- returns 3649 
-
-SELECT playerid, MAX(hr)
-FROM batting
-WHERE yearid BETWEEN 2006 AND 2015
-GROUP BY playerid
-ORDER BY MAX(hr) DESC
 
 SELECT COUNT(DISTINCT(playerid))
 FROM batting
-WHERE yearid BETWEEN 2006 AND 2015
+WHERE yearid <2016
+--Distinct: 18657
 
-"moralke01" hit 30 homeruns in 2016
-
-SELECT playerid, yearid, hr
+SELECT MAX(hr), playerid
 FROM batting
-WHERE playerid = 'moralke01'
-ORDER BY yearid DESC
-
-SELECT MAX(hr), yearid
-FROM batting
-GROUP BY yearid
-
---3391 max homeruns from 2006 to 2015
--- 3391 distinct players between 2006 and 2016
-
-SELECT playerid, 
-FROM batting 
-WHERE yearid = 2016 
-HAVING MAX(hr) IN
-
-CTE and a join
-
-(SELECT playerid, MAX(hr)
-FROM batting
-WHERE yearid BETWEEN 2006 AND 2015
+WHERE yearid <2016
 GROUP BY playerid
-ORDER BY MAX(hr) DESC);
+ORDER BY MAX(hr) DESC
+--18657. checking to make sure the MAX function worked the way I wanted it to.
 
-years must have played in the last 10 year. 
+WITH homeruns1 AS
+(SELECT MAX(hr) AS other_year_hr, playerid
+FROM batting
+WHERE yearid <2016 and hr >=1
+GROUP BY playerid
+ORDER BY MAX(hr) DESC), 
+
+homeruns2 AS
+(SELECT playerid, hr, yearid
+FROM batting 
+WHERE yearid = 2016 AND hr >=1
+ORDER BY hr DESC)
+
+SELECT playerid, hr, other_year_hr, CONCAT(namefirst,' ', namelast), CAST(debut AS date),
+CASE WHEN hr >= other_year_hr THEN 'max2016' WHEN hr < other_year_hr THEN 'nomax' END AS maxhomerun
+FROM homeruns1
+RIGHT JOIN homeruns2
+USING (playerid)
+INNER JOIN people
+USING (playerid)
+WHERE CAST(debut AS date) <= '2006-12-31'
+ORDER BY maxhomerun
+--gives me 7 players
+---------------------------------------------------------------------------------------------------------------------
+WITH homeruns1 AS
+(SELECT MAX(hr) AS other_year_hr, playerid
+FROM batting
+WHERE yearid <2016 and hr >=1
+GROUP BY playerid
+ORDER BY MAX(hr) DESC), 
+
+homeruns2 AS
+(SELECT playerid, hr, yearid
+FROM batting 
+WHERE yearid = 2016 AND hr >=1
+ORDER BY hr DESC)
+
+SELECT hr, CONCAT(namefirst,' ', namelast),
+CASE WHEN hr >= other_year_hr THEN 'max2016' WHEN hr < other_year_hr THEN 'nomax' END AS maxhomerun
+FROM homeruns1
+RIGHT JOIN homeruns2
+USING (playerid)
+INNER JOIN people
+USING (playerid)
+WHERE CAST(debut AS date) <= '2006-12-31'
+ORDER BY maxhomerun
+LIMIT 7;
+-- Query that shows only homeruns, name, and whether they got their career high in 2016 or not.
+----------------------------------------------------------------------------------------------------------------------
